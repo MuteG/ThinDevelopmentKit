@@ -5,7 +5,7 @@ using ThinDevelopmentKit.Config;
 
 namespace ThinDevelopmentKit.Data
 {
-    public abstract class AbstractDBHelper : IDBHelper, IDisposable
+    public abstract class AbstractDBHelper : IDBHelper
     {
         protected DbConnection conn = null;
         private DbTransaction tran = null;
@@ -41,7 +41,14 @@ namespace ThinDevelopmentKit.Data
 
         public void BeginTransaction()
         {
-            this.tran = this.conn.BeginTransaction();
+            if (this.tran == null)
+            {
+                if (this.conn.State == ConnectionState.Broken || this.conn.State == ConnectionState.Closed)
+                {
+                    this.conn.Open();
+                }
+                this.tran = this.conn.BeginTransaction();
+            }
         }
 
         public void CommitTransaction()
@@ -50,6 +57,7 @@ namespace ThinDevelopmentKit.Data
             {
                 this.tran.Commit();
                 this.tran = null;
+                this.tranCmd = null;
             }
         }
 
@@ -59,6 +67,7 @@ namespace ThinDevelopmentKit.Data
             {
                 this.tran.Rollback();
                 this.tran = null;
+                this.tranCmd = null;
             }
         }
 
@@ -69,10 +78,10 @@ namespace ThinDevelopmentKit.Data
                 this.conn.Open();
             }
             DbCommand cmd = this.conn.CreateCommand();
-            if (this.tran != null)
-            {
-                cmd.Transaction = this.tran;
-            }
+            //if (this.tran != null)
+            //{
+            //    cmd.Transaction = this.tran;
+            //}
             cmd.CommandTimeout = this.timeoutSeconds;
             cmd.CommandType = CommandType.Text;
             cmd.CommandText = sql;
@@ -95,16 +104,32 @@ namespace ThinDevelopmentKit.Data
             return cmd.ExecuteReader();
         }
 
+        private DbCommand tranCmd = null;
+
         public int ExecuteNonQuery(string sql, params DbParameter[] parameters)
         {
-            DbCommand cmd = this.GenerateCommand(sql, parameters);
+            DbCommand cmd;
+            if (this.tran != null)
+            {
+                if (tranCmd == null)
+                {
+                    tranCmd = this.GenerateCommand(sql);
+                }
+                cmd = tranCmd;
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddRange(parameters);
+            }
+            else
+            {
+                cmd = this.GenerateCommand(sql, parameters);
+            }
             return cmd.ExecuteNonQuery();
         }
 
         public T ExecuteScalar<T>(string sql, params DbParameter[] parameters)
         {
             DbCommand cmd = this.GenerateCommand(sql, parameters);
-            return (T)cmd.ExecuteScalar();
+            return (T)Convert.ChangeType(cmd.ExecuteScalar(), typeof(T));
         }
         #endregion
 

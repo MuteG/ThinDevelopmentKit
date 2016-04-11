@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Data.Common;
 
 namespace ThinDevelopmentKit.Data
@@ -6,12 +7,16 @@ namespace ThinDevelopmentKit.Data
 	/// <summary>
     /// DB操作接口
 	/// </summary>
-	public interface IDBHelper
-	{
+	public interface IDBHelper : IDisposable
+    {
         /// <summary>
         /// 测试数据库连接
         /// </summary>
         void TestConnection();
+
+        void BeginTransaction();
+        void CommitTransaction();
+        void RollbackTranscation();
 
         /// <summary>
         /// 执行指定的命令字符串

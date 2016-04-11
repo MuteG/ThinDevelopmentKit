@@ -20,6 +20,10 @@ namespace ThinDevelopmentKit.Log
         {
             try
             {
+                if (!Directory.Exists(this.Source))
+                {
+                    Directory.CreateDirectory(this.Source);
+                }
                 string exeName = Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly().Location);
                 string logFile = Path.Combine(this.Source,
                     string.Format("{1}_{0:yyyyMMdd}.log", DateTime.Now, exeName));

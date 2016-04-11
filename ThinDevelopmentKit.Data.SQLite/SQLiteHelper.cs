@@ -37,5 +37,10 @@ namespace ThinDevelopmentKit.Data.SQLite
         {
             return new SQLiteConnection(conn);
         }
+
+        public void Create(string dbFile)
+        {
+            SQLiteConnection.CreateFile(dbFile);
+        }
     }
 }
